@@ -76,6 +76,13 @@ class FTPClient():
             self.client.cwd(pwd)
         return type
 
+    def get_modified_date(self, fpath):
+        try:
+            ts = self.client.voidcmd("MDTM {}".format(fpath))[4:].strip()
+            return ts
+        except error_perm as e:
+            return None
+
     def dir(self, fpath):
         listing_retrieved = []
         listing_2return = []
@@ -85,7 +92,8 @@ class FTPClient():
             type = self.get_type(file)
             listing_2return.append({
                 "filename": file,
-                "type": self.get_type(file)
+                "type": self.get_type(file),
+                "modified_date": self.get_modified_date(file)
             })
             if type == "DIR":
                 listing_2return += self.dir(file)
@@ -147,6 +155,13 @@ class SFTPClient():
                 type = None
         return type
 
+    def get_modified_date(self, fpath):
+        try:
+            ts = self.client.stat(fpath).st_mtime
+            return ts
+        except Exception as e:
+            return None
+
     def dir(self, fpath):
         listing_2return = []
         listing_retrieved = []
@@ -161,7 +176,8 @@ class SFTPClient():
         for file in listing_retrieved:
             full_path = dir_path + file
             type = self.get_type(full_path)
-            listing_2return.append({"filename": full_path, "type": type})
+            modified_date = self.get_modified_date(full_path)
+            listing_2return.append({"filename": full_path, "type": type, "modified_date": modified_date})
             if type == "DIR":
                 listing_2return += self.dir(full_path)
         return listing_2return
